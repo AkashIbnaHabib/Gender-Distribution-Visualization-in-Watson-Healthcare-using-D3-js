@@ -1,0 +1,351 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="description" content="L3 - Colour picker ">
+    <title>Gender distribution among departments</title>
+
+     <!-- fetch the D3js library -->
+    <script src="https://d3js.org/d3.v7.min.js" charset="utf-8"></script>
+    <script src="https://unpkg.com/d3-v6-tip@1.0.9/build/d3-v6-tip.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/bumbeishvili/d3-tip-for-v6@4/d3-tip.min.css">
+    
+    
+  </head>
+
+  <body>
+    <nav><a href="../Artefact_The Pentacrackers.html">Back</a></nav>
+    <section id="creator">
+        <p>Akash Ibna Habib</p>
+    </section>
+    
+    <svg width="1900" height="380" style="margin-top: 1%; margin-left: 1%;"></svg>
+    <style>
+        *{
+            font-family: "Helvetica", sans-serif;
+        }
+
+        #creator {
+            border: 2px solid rgba(0, 0, 0, 0.874);
+            padding: 3px;
+            background-color: rgb(215, 250, 234);
+            text-align: center;
+            font-weight: bold;
+            font-size: 16pt;
+        }
+        
+         /* Tooltip design */
+        .d3-tip {
+            
+            font-weight: light;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            line-height: 1;
+            border-radius: 3px;
+            color: #fff;
+        }
+        /* button style */
+        #button{
+            margin-left: 50px;
+        }
+
+
+    </style>
+    <div id="button">
+        <!-- Sex selection button design -->
+        <br><br>Sex: 
+        <input id="button1" type="radio" name="group" value="all" checked='true'/>All
+        <input id="button2" type="radio" name="group" value="male"/>Male
+        <input id="button3" type="radio" name="group" value="female"/>Female
+    </div>
+
+    <script>
+
+        let scaleY;
+        let x0;
+        let x1;
+        let tip;
+        let subGroup;
+
+        // input the json data
+        d3.json("dataJson.json")
+                .then(buildGraph)
+
+      //building the graph
+        function buildGraph(data){
+                finalData = data;
+
+                /* extraction of label */
+                const male = data.map(function(d) {return d.male});
+                const female = data.map(function(d){return d.female});
+                const labels = data.map(function(d) {return d.EducationField});
+        
+               /* maximum number of each sex */
+               const maxFemale = d3.max(female);
+
+                const maxMale = d3.max(male);
+                
+                const maxCount = d3.max([maxMale, maxFemale]);
+
+                // SVG creation
+                svg = d3.select("svg");
+                //setting height and width
+                const margin = {top: 100, right: 20, bottom: 60, left: 60};
+                const height = +svg.attr("height") - margin.top - margin.bottom;
+                const width = +svg.attr("width") - margin.left - margin.right;
+                
+                svg.style('border', '2px solid black');
+                const container = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+                
+
+                //gender values
+                subGroup = ["male", "female"];
+
+                if(document.getElementById('button1').checked){
+                    subGroup = ["male", "female"];
+                }
+                
+                if(document.getElementById('button3').checked){
+                    subGroup = ["female"];
+                }
+                if(document.getElementById('button2').checked){
+                    subGroup = ["male"];
+                }
+                
+                
+                //setting space between groups
+                x0 = d3.scaleBand()
+                    .domain(finalData.map(d => d.EducationField))
+                    .rangeRound([0, width-500])
+                    .paddingInner(0.1);
+
+                //space between bars
+                x1 = d3.scaleBand()
+                        .domain(["male", "female"])
+                        .rangeRound([0, x0.bandwidth()])
+                        .padding(0.05);
+
+                 yScale = d3.scaleLinear()
+                .domain([0, maxCount])
+                .range([height, 0]);
+                      
+                //appending the data
+                const groups = container.selectAll("g")
+                 .data(finalData, d => d.EducationField)
+                 .join("g")
+                 .attr("transform", d => `translate(${x0(d.EducationField)}, 0)`);
+
+
+                
+                const title = container.append("text")
+                                    .attr("x", width / 2)
+                                    .attr("y", -margin.top / 2)
+                                    .attr("text-anchor", "middle")
+                                    .attr("font-weight", 500)
+                                    .attr("font-size", "20px")
+                                    .text("Infographic Chart: Gender Distribution in Education Field");
+
+
+                    
+                // Create a tool-tip
+                tip =  d3.tip()
+                          .attr('class', 'd3-tip')
+                          .offset([-17, 0])
+                          .html(function (event, d) {
+                              return `<strong>Sex: </strong><span style='color:orangered'>${d.key}</span></br>
+                              <strong>Number: </strong><span style='color:orangered'>${d.value}</span>`;
+                          });
+
+
+                groups.call(tip);
+                // processing the image
+                const defs = svg.append("defs");
+
+                const patterns = [
+            {
+                id: "bg",
+                image: "Image/male_before.png",
+            },
+            {
+                id: "bg2",
+                image: "Image/female_before.png",
+            },
+            {
+                id: "bg3",
+                image: "Image/male_after.png",
+            },
+            {
+                id: "bg4",
+                image: "Image/female_after.png",
+            },
+            ];
+
+            patterns.forEach(({ id, image }) => {
+            const pattern = defs
+                .append("pattern")
+                .attr("id", id)
+                .attr("height", "100%")
+                .attr("width", "100%")
+                .attr("patternContentUnits", "objectBoundingBox");
+            pattern
+                .append("image")
+                .attr("height", 1)
+                .attr("width", 1)
+                .attr("xlink:href", image);
+            });
+                                
+                //the x-axis for the department name
+                //this axis has the name of six diifferent value
+                container.append("g")
+                    .attr("class", "axis")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(d3.axisBottom(x0))
+                    .append("text")
+                    .attr("x", width/2)
+                    .attr("y", yScale(yScale.ticks().pop()) + 30)
+                    .attr("dy", "0.32em")
+                    .attr("fill", "#000")
+                    .attr("font-weight", "bold")
+                    .attr("text-anchor", "start")
+                    .text("Department Name");
+
+                //the y-axis for the number of male/female
+                container.append("g")
+                    .attr("class", "y axis")
+                    .call(d3.axisLeft(yScale))
+                    .append("text")
+                    .attr("x", -50)
+                    .attr("y", yScale(yScale.ticks().pop())- 20)
+                    .attr("dy", "0.32em")
+                    .attr("fill", "#000")
+                    .attr("font-weight", "bold")
+                    .attr("text-anchor", "start")
+                    .text("Total Number");
+
+                    //creating the infographic chart
+                    plot(groups);
+                    d3.selectAll("input").on("click",  function plot(){
+
+                        subGroup = document.getElementById('button1').checked ? ["male", "female"]
+                                    : document.getElementById('button2').checked ? ["male"]
+                                    : document.getElementById('button3').checked ? ["female"]
+                                    : [];
+                                                    console.log(subGroup)
+
+                                                    // taking all the distinct fields from the education field
+                                                    // creating subgroups for the education 
+                                                    let bars = groups
+                                                    .selectAll("rect")
+                                                    .data(d => subGroup.map(key => ({ key, value: d[key], A: d.EducationField })), (d) => "" + d.EducationField + "_" + d.key)
+                                                    .join("rect")
+                                                    .classed('bar', true)
+                                                        .on('mouseover.bar', onMouseOver) //Add listener for the mouseover event
+                                                        .on('mouseover.text', tip.show)    //Add listener for the tooltip
+                                                        .on('mouseout.bar', onMouseOut)   //Add listener for the mouseout event
+                                                        .on('mouseout.text', tip.hide)      //Add listener for the tooltip
+                                                    .attr("fill", function(d){if (d.key == "male") {return "url(#bg)"} else{return "url(#bg2)"} })
+                                                    .attr("x", d => x1(d.key))
+                                                    .attr("width", (d) => x1.bandwidth())
+                                                    .attr('y', yScale(0))
+
+                                                    .transition()
+                                                        .duration(800)
+                                                        .delay((d, i) => i * 40)
+                                                        .attrTween("y", d => {
+                                                         const i = d3.interpolate(yScale(0), yScale(d.value));
+                                                        return t => i(t);
+                                                    })
+                                                        .attrTween("height", d => {
+                                                        const i = d3.interpolate(0, Math.abs(yScale(0) - yScale(d.value)));
+                                                        return t => i(t);
+                                                    });
+                                                    } );
+                                        
+
+
+                
+                                    
+
+            }
+            
+
+            
+            function plot(groups){              
+                //define groups bars, one per sub group 
+                let bars = groups 
+                .selectAll("rect")
+                .data(d => subGroup.map(key => ({ key, value: d[key], A: d.EducationField })), (d) => "" + d.EducationField + "_" + d.key)
+                .join("rect")
+                .classed('bar', true)
+                    .on('mouseover.bar', onMouseOver) //Add listener for the mouseover event
+                    .on('mouseover.text', tip.show)   //Add listener for the tooltip
+                    .on('mouseout.bar', onMouseOut)   //Add listener for the mouseout event
+                    .on('mouseout.text', tip.hide)     //Add listener for the tooltip
+                .attr("fill", function(d){if (d.key == "male") {return "url(#bg)"} else{return "url(#bg2)"} })
+                .attr("x", d => x1(d.key))
+                .attr("width", (d) => x1.bandwidth())
+                .attr('y', yScale(0))
+                
+               
+                // giving a smooth transition in the infographic model
+                .transition()
+                        .ease(d3.easeLinear)
+                        .duration(600)
+                        .delay(function (d, i) {
+                            return i * 50;
+                        })
+                        .attr('y',  (d) => Math.min(yScale(0), yScale(d.value)))
+                        .attr('height', (d) => Math.abs(yScale(0) - yScale(d.value)));
+            }
+
+
+        // function for the event of mouse hover
+        function onMouseOut() {
+  const thisBar = d3.select(this);
+
+            thisBar
+             .attr("fill", function(d) {
+                if (d.key == "male") {
+                 return "url(#bg)";
+                } else {
+                 return "url(#bg2)";
+                }
+                })
+                .transition()
+                .duration(400);
+                }
+
+        // function for the event of mouseover 
+        function onMouseOver(event) {
+            const thisBar = d3.select(this);
+            const datum = thisBar.datum(); // this will give the single value joined to the bar
+
+            thisBar
+                .attr("fill", function(d){if (d.key == "male") {return "url(#bg3)"} else{return "url(#bg4)"} })
+                .transition()     // gives transition 
+                .duration(600)
+        }
+
+        
+
+    </script>
+    <!-- Inspiration for the plotting of the graph has been inpired from: https://d3-graph-gallery.com/graph/barplot_grouped_basicWide.html -->
+    <!-- Inspiration for passing the multiple functions on the event of hover has been inspired from
+        : https://stackoverflow.com/questions/44978574/d3-js-passing-in-multiple-functions-on-hover -->
+
+
+    
+  </body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
